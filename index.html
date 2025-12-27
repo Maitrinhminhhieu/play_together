@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trang Web by Shota</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- 1. CORE VARIABLES & RESET --- */
+    :root {
+        --bg-dark: #050511;
+        --glass-surface: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --glass-highlight: rgba(255, 255, 255, 0.2);
+        --primary-glow: #00f2ff;
+        --secondary-glow: #bd00ff;
+        --text-main: #ffffff;
+        --text-muted: rgba(255, 255, 255, 0.6);
+        --font-main: 'Outfit', sans-serif;
+        --font-code: 'Space Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+    
+    body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        font-family: var(--font-main);
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    /* --- 2. ADVANCED BACKGROUND (Mesh Gradient) --- */
+    .ambient-light {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: -1;
+        background: radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.4), transparent 50%),
+                    radial-gradient(circle at 85% 30%, rgba(0, 242, 255, 0.25), transparent 50%),
+                    radial-gradient(circle at 50% 80%, rgba(255, 0, 128, 0.2), transparent 50%);
+        filter: blur(60px);
+        animation: pulseBg 15s infinite alternate ease-in-out;
+    }
+    
+    .noise-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0.05;
+        z-index: -1;
+        background: url('https://grainy-gradients.vercel.app/noise.svg');
+        pointer-events: none;
+    }
+
+    @keyframes pulseBg {
+        0% { transform: scale(1); filter: blur(60px) hue-rotate(0deg); }
+        100% { transform: scale(1.1); filter: blur(80px) hue-rotate(20deg); }
+    }
+
+    /* --- 3. WELCOME SCREEN (Intro) --- */
+    #welcome-layer {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(5, 5, 17, 0.85);
+        backdrop-filter: blur(30px);
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 0.8s ease, visibility 0.8s;
+    }
+
+    .typewriter-text {
+        font-family: var(--font-code);
+        font-size: 1.5rem;
+        color: var(--primary-glow);
+        margin-bottom: 40px;
+        min-height: 1.6em; /* Giữ chỗ để không bị giật layout */
+        text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+        text-align: center;
+        padding: 0 20px;
+        line-height: 1.6;
+    }
+
+    .cursor {
+        display: inline-block;
+        width: 10px; height: 1.5rem;
+        background: var(--secondary-glow);
+        margin-left: 5px;
+        animation: blink 1s infinite;
+        vertical-align: middle;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .enter-btn {
+        padding: 15px 50px;
+        border-radius: 50px;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        opacity: 0; /* Ẩn lúc đầu */
+        transform: translateY(20px);
+    }
+    
+    .enter-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .enter-btn:hover {
+        border-color: var(--primary-glow);
+        box-shadow: 0 0 30px rgba(0, 242, 255, 0.3);
+        transform: translateY(17px) scale(1.05); /* Giữ translateY để animation mượt */
+    }
+    
+    .enter-btn:hover::before { left: 100%; }
+
+    /* --- 4. MAIN LAYOUT (Game) --- */
+    .game-wrapper {
+        display: flex;
+        gap: 30px;
+        width: 90%;
+        max-width: 1400px;
+        height: 85vh;
+        opacity: 0; /* Ẩn để chờ intro */
+        transform: scale(0.95);
+        transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    /* Khối Glass chung */
+    .glass-panel {
+        background: var(--glass-surface);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    /* Hiệu ứng viền sáng chạy */
+    .glass-panel::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
+        opacity: 0.5;
+    }
+
+    /* Sidebar (Công cụ) */
+    .sidebar {
+        width: 120px;
+        padding: 30px 15px;
+        align-items: center;
+        gap: 25px;
+        overflow-y: auto;
+    }
+    .sidebar::-webkit-scrollbar { width: 0px; }
+
+    .brand-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        font-family: var(--font-code);
+        font-weight: 700;
+        letter-spacing: 4px;
+        color: var(--text-muted);
+        margin-bottom: auto;
+        font-size: 0.8rem;
+    }
+
+    /* Palette Items - Fix "Nham nhở" */
+    .palette-item {
+        width: 70px; height: 70px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.4s ease;
+        border-radius: 20px;
+    }
+
+    .palette-item img {
+        width: 85%; height: 85%;
+        object-fit: contain;
+        filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Hiệu ứng Hover & Active chuyên nghiệp */
+    .palette-item:hover img { transform: scale(1.15); }
+    
+    .palette-item.active {
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    }
+    .palette-item.active img {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 15px var(--primary-glow));
+    }
+    /* Indicator dot cho item đang chọn */
+    .palette-item.active::after {
+        content: '';
+        position: absolute;
+        right: -5px; top: 50%; transform: translateY(-50%);
+        width: 6px; height: 6px;
+        background: var(--primary-glow);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* Main Board Area */
+    .main-area {
+        flex: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Top Bar */
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px 20px 20px;
+        border-bottom: 1px solid var(--glass-border);
+        margin-bottom: 20px;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    input {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--glass-border);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 12px;
+        width: 100px;
+        text-align: center;
+        font-family: var(--font-code);
+        transition: 0.3s;
+    }
+    input:focus {
+        border-color: var(--secondary-glow);
+        box-shadow: 0 0 15px rgba(189, 0, 255, 0.2);
+    }
+
+    button#action-btn {
+        background: linear-gradient(135deg, var(--secondary-glow), #7b2cbf);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 20px rgba(189, 0, 255, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button#action-btn:active { transform: scale(0.95); }
+
+    /* Grid Container */
+    .grid-container {
+        flex: 1;
+        overflow: auto;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+    }
+
+    .grid {
+        display: none; /* Hiện khi JS chạy */
+        gap: 12px;
+        padding: 20px;
+        transition: 0.3s;
+    }
+
+    /* Cell Styles - Giao thoa màu sắc */
+    .cell {
+        width: 85px; height: 85px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Hiệu ứng kính lồi khi hover */
+    .cell:hover {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .cell img {
+        width: 90%; height: 90%;
+        object-fit: contain;
+        animation: floatIn 0.4s ease-out;
+        pointer-events: none;
+        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.4));
+    }
+
+    @keyframes floatIn {
+        from { transform: scale(0) rotate(-10deg); opacity: 0; }
+        to { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    /* Hiệu ứng Match (Giao thoa) */
+    .match-anim {
+        animation: hologramFlash 0.6s forwards;
+    }
+
+    @keyframes hologramFlash {
+        0% { background: rgba(0, 242, 255, 0.1); border-color: var(--primary-glow); }
+        50% { background: rgba(0, 242, 255, 0.4); box-shadow: 0 0 40px var(--primary-glow), inset 0 0 20px var(--primary-glow); transform: scale(1.1); }
+        100% { background: transparent; transform: scale(1); opacity: 0; }
+    }
+
+    /* Footer */
+    .footer {
+        position: absolute;
+        bottom: 15px; right: 30px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .footer a {
+        color: var(--primary-glow);
+        text-decoration: none;
+        font-weight: 500;
+        position: relative;
+    }
+    .footer a::after {
+        content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px;
+        background: var(--primary-glow); transition: 0.3s;
+    }
+    .footer a:hover::after { width: 100%; }
+
+    /* Responsive */
+    @media (max-width: 800px) {
+        .game-wrapper { flex-direction: column; height: 95vh; gap: 10px; }
+        .sidebar { width: 100%; height: 90px; flex-direction: row; padding: 10px; overflow-x: auto; }
+        .brand-text { display: none; }
+        .palette-item { min-width: 60px; }
+        .top-bar { flex-direction: column; gap: 15px; }
+    }
+</style>
+</head>
+<body>
+
+    <div class="ambient-light"></div>
+    <div class="noise-overlay"></div>
+
+    <div id="welcome-layer">
+        <div class="typewriter-text" id="type-target">
+            </div>
+        <button class="enter-btn" id="enter-btn">Ấn vào đây để vào trang</button>
+    </div>
+
+    <div class="game-wrapper" id="game-ui">
+        <aside class="glass-panel sidebar" id="palette-container">
+            <div class="brand-text">SHOTA STUDIO</div>
+        </aside>
+
+        <main class="glass-panel main-area">
+            <div class="top-bar">
+                <div class="input-group">
+                    <input type="number" id="rows" placeholder="Hàng" min="1" max="10">
+                    <span style="opacity:0.5">✕</span>
+                    <input type="number" id="cols" placeholder="Cột" min="1" max="10">
+                </div>
+                <button id="action-btn">TẠO Ô </button>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid" id="grid"></div>
+            </div>
+            
+            <div class="footer">
+                <span>Designed by <b>Shota</b></span>
+                <span>•</span>
+                <a href="https://www.facebook.com/shota.vn" target="_blank">Kết nối Facebook</a>
+            </div>
+        </main>
+    </div>
+
+<script>
+    /* --- CONFIG & STATE --- */
+    const CONFIG = {
+        totalImages: 9,
+        textToType: "Xin chào ! Mình là Shota, rất vui khi được làm quen với bạn.",
+        typeSpeed: 60 // Tốc độ gõ (ms)
+    };
+
+    let state = {
+        selectedImage: null,
+        isLocked: false,
+        gridGenerated: false
+    };
+
+    /* --- DOM ELEMENTS --- */
+    const els = {
+        welcomeLayer: document.getElementById('welcome-layer'),
+        typeTarget: document.getElementById('type-target'),
+        enterBtn: document.getElementById('enter-btn'),
+        gameUI: document.getElementById('game-ui'),
+        palette: document.getElementById('palette-container'),
+        grid: document.getElementById('grid'),
+        btnAction: document.getElementById('action-btn'),
+        inpRows: document.getElementById('rows'),
+        inpCols: document.getElementById('cols')
+    };
+
+    /* --- 1. TYPEWRITER EFFECT (INTRO) --- */
+    function startIntro() {
+        let i = 0;
+        els.typeTarget.innerHTML = '<span class="cursor"></span>';
+        
+        function type() {
+            if (i < CONFIG.textToType.length) {
+                const char = CONFIG.textToType.charAt(i);
+                els.typeTarget.innerText = CONFIG.textToType.substring(0, i + 1);
+                // Thêm lại con trỏ nhấp nháy
+                els.typeTarget.innerHTML += '<span class="cursor"></span>';
+                i++;
+                setTimeout(type, CONFIG.typeSpeed);
+            } else {
+                // Gõ xong -> Hiện nút
+                els.enterBtn.style.opacity = '1';
+                els.enterBtn.style.transform = 'translateY(0)';
+            }
+        }
+        setTimeout(type, 800); // Delay 1 chút trước khi gõ
+    }
+
+    // Xử lý chuyển trang
+    els.enterBtn.addEventListener('click', () => {
+        els.welcomeLayer.style.opacity = '0';
+        els.welcomeLayer.style.visibility = 'hidden';
+        
+        // Hiện Game
+        els.gameUI.style.opacity = '1';
+        els.gameUI.style.transform = 'scale(1)';
+    });
+
+    /* --- 2. GAME LOGIC --- */
+    
+    // Init Palette
+    function initPalette() {
+        // Giữ lại chữ Brand, chỉ thêm hình
+        const frag = document.createDocumentFragment();
+        
+        for(let i=1; i<=CONFIG.totalImages; i++) {
+            const div = document.createElement('div');
+            div.className = 'palette-item';
+            
+            const img = document.createElement('img');
+            img.src = `h${i}.png`; 
+            // Placeholder nếu lỗi ảnh
+            img.onerror = () => img.src = `https://api.dicebear.com/7.x/glass/svg?seed=${i}&backgroundColor=transparent`;
+            
+            div.appendChild(img);
+            
+            div.onclick = () => {
+                document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+                state.selectedImage = img.src; // Lưu src để dùng
+            };
+            
+            frag.appendChild(div);
+        }
+        els.palette.insertBefore(frag, els.palette.firstChild);
+    }
+
+    // Build Grid
+    function buildGrid() {
+        const r = parseInt(els.inpRows.value);
+        const c = parseInt(els.inpCols.value);
+
+        if(!r || !c || r <=0 || c <= 0) {
+            alert("Vui lòng nhập số hàng và cột hợp lệ!");
+            return;
+        }
+
+        els.grid.innerHTML = "";
+        els.grid.style.display = "grid";
+        els.grid.style.gridTemplateColumns = `repeat(${c}, 85px)`;
+        els.grid.style.gridTemplateRows = `repeat(${r}, 85px)`;
+
+        // Hiệu ứng Reset nút
+        els.btnAction.innerText = "LÀM MỚI";
+        
+        for(let k=0; k < r*c; k++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.onclick = () => handleCellClick(cell);
+            // Double click xóa nhanh
+            cell.ondblclick = () => { 
+                if(!state.isLocked) cell.innerHTML = ''; 
+            };
+            els.grid.appendChild(cell);
+        }
+    }
+
+    // Handle Click
+    function handleCellClick(cell) {
+        if(state.isLocked || cell.classList.contains('hidden-cell')) return;
+
+        if(!state.selectedImage) {
+            // Rung nhẹ sidebar để nhắc chọn ảnh
+            els.palette.animate([
+                { transform: 'translateX(0)' },
+                { transform: 'translateX(-10px)' },
+                { transform: 'translateX(10px)' },
+                { transform: 'translateX(0)' }
+            ], { duration: 300 });
+            return;
+        }
+
+        // Đặt ảnh vào ô
+        cell.innerHTML = `<img src="${state.selectedImage}" data-src="${state.selectedImage}">`;
+        
+        // Logic tìm cặp trùng
+        findMatch(cell);
+    }
+
+    function findMatch(currentCell) {
+        const currentImg = currentCell.querySelector('img');
+        if(!currentImg) return;
+        
+        const src = currentImg.dataset.src;
+        const allCells = [...document.querySelectorAll('.cell')];
+        
+        // Lọc các ô có ảnh giống nhưng không phải ô hiện tại
+        const match = allCells.find(c => {
+            if(c === currentCell) return false;
+            const img = c.querySelector('img');
+            return img && img.dataset.src === src && !c.classList.contains('hidden-cell');
+        });
+
+        if(match) {
+            state.isLocked = true; // Khóa thao tác
+            
+            // Trigger animation
+            [currentCell, match].forEach(el => el.classList.add('match-anim'));
+
+            // Xử lý sau khi animation chạy
+            setTimeout(() => {
+                [currentCell, match].forEach(el => {
+                    el.innerHTML = '';
+                    el.classList.remove('match-anim');
+                    el.classList.add('hidden-cell'); // Đánh dấu đã ẩn
+                    el.style.visibility = 'hidden'; // Ẩn khỏi màn hình
+                });
+                state.isLocked = false;
+                checkWin();
+            }, 600);
+        }
+    }
+
+    function checkWin() {
+        const remaining = document.querySelectorAll('.cell:not(.hidden-cell)').length;
+        if(remaining === 0 && els.grid.children.length > 0) {
+            createConfetti();
+        }
+    }
+
+    // Pháo hoa chiến thắng (Particle Effect)
+    function createConfetti() {
+        const colors = ['#00f2ff', '#bd00ff', '#ff0080', '#ffffff'];
+        for(let i=0; i<150; i++) {
+            const p = document.createElement('div');
+            p.style.position = 'fixed';
+            p.style.left = '50%';
+            p.style.top = '50%';
+            p.style.width = Math.random() * 8 + 'px';
+            p.style.height = p.style.width;
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            p.style.borderRadius = '50%';
+            p.style.zIndex = '9999';
+            p.style.pointerEvents = 'none';
+            document.body.appendChild(p);
+
+            // Animation vật lý
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 200 + 100;
+            const tx = Math.cos(angle) * velocity;
+            const ty = Math.sin(angle) * velocity;
+
+            p.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+            ], {
+                duration: Math.random() * 1000 + 1000,
+                easing: 'cubic-bezier(0, .9, .57, 1)'
+            }).onfinish = () => p.remove();
+        }
+    }
+
+    /* --- INITIALIZATION --- */
+    window.onload = () => {
+        startIntro();
+        initPalette();
+        
+        els.btnAction.onclick = buildGrid;
+    };
+
+</script>
+</body>
+</html>
